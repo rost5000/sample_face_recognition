@@ -1,7 +1,7 @@
 from cv2 import CascadeClassifier
 from mtcnn.mtcnn import MTCNN
 
-face_cascade = CascadeClassifier('src/resources/cascade/haarcascade_frontalface_default.xml')
+face_cascade = CascadeClassifier('../../resources/cascade/haarcascade_frontalface_default.xml')
 detector = MTCNN()  # Медленно работает TODO: выпилить
 
 
@@ -16,5 +16,8 @@ def get_face_from_image(frame):
     :param frame: the rgb frame for image
     :return: coordinates
     """
-    face_coord = [face['box'] for face in detector.detect_faces(frame)]
+    # face_coord = [face['box'] for face in detector.detect_faces(frame)]
+    face_coord = face_cascade.detectMultiScale(frame,
+                                scaleFactor=1.1,
+                                minNeighbors=8)
     return face_coord
