@@ -45,7 +45,7 @@ def get_embeding(x:np.ndarray):
     return model.predict(
         norm(cv2.resize(x, (160, 160))
              .reshape(-1,160,160,3))
-    ).flatten()
+    )
 
 def predict_embedded_eucledian_distance(test_x, train_x, train_y):
     res = []
@@ -54,10 +54,10 @@ def predict_embedded_eucledian_distance(test_x, train_x, train_y):
         res.append(None)
         for indx, emb_train in enumerate(train_x):
             min_new = distance.euclidean(emb_train, emb_test)
-            if min_new < 1 and min > min_new:
+            if min_new < 0.75 and min > min_new:
                 min = min_new
                 res[-1] = train_y[indx]
-    return res[0]
+    return res
 
 if __name__ == "__main__":
     kf = KFold(n_splits=2)
@@ -70,12 +70,12 @@ if __name__ == "__main__":
             train_y.append(clss)
             frame = cv2.imread(dest_path + '/' + clss + '/' + dates[indx])
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            train_x.append(frame.flatten())
+            train_x.append(frame)
         for indx in test_index[0]:
             test_y.append(clss)
             frame = cv2.imread(dest_path + '/' + clss + '/' + dates[indx])
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            test_x.append(frame.flatten())
+            test_x.append(frame)
 
     print()
     med_val_test = 605
@@ -99,10 +99,17 @@ if __name__ == "__main__":
         test_x_embeded.append(get_embeding(tst)[0])
     for trn in train_x:
         train_x_embeded.append(get_embeding(trn)[0])
-    test_y_predicted_new = predict_embedded_eucledian_distance(l2_normalize(test_x_embeded), l2_normalize(train_x_embeded), train_y_new)
+    test_y_predicted_new = predict_embedded_eucledian_distance(l2_normalize(test_x_embeded),
+                                                               l2_normalize(train_x_embeded[med_val_train:hight_board]),
+                                                               train_y_new[med_val_train:hight_board])
+    for indx in range(len(test_y_predicted_new)):
+        if test_y_predicted_new[indx] is None:
+            test_y_predicted_new[indx] = 0
+
+
     print("Results:")
     print("Accuracy:", end=' ')
-    print(np.mean(test_y_predicted_new[indx] == test_y_new[indx] for indx in range(hight_board)))
+    print(np.mean([test_y_predicted_new[indx] == test_y_new[indx] for indx in range(hight_board)]))
 
 
     print("True Positive:", end=' ')
