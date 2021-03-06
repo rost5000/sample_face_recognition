@@ -36,17 +36,17 @@ if __name__ == "__main__":
             frame = li.load_from_camera(cap)
             faces_coord = face_utils.get_face_from_image(frame)
             print(faces_coord)
-            if faces_coord.__len__() == 1:
-                x_face, y_face, w_face, h_face = [faces_coord[0][0], faces_coord[0][1], faces_coord[0][2],
-                                                  faces_coord[0][3]]
+            for face_coord in faces_coord:
+                x_face, y_face, w_face, h_face = [face_coord[0], face_coord[1], face_coord[2],
+                                                  face_coord[3]]
                 emb_test = fs.get_embeding(
                     frame[y_face:y_face + h_face, x_face:x_face + w_face]
                 )
                 res = fs.predict_embedded_euclidean_distance(np.array([emb_test]), np.array(emb_train), y_train)
                 cv2.rectangle(
                     frame,
-                    (faces_coord[0][0], faces_coord[0][1]),
-                    (faces_coord[0][0] + faces_coord[0][2], faces_coord[0][1] + faces_coord[0][3]),
+                    (face_coord[0], face_coord[1]),
+                    (face_coord[0] + face_coord[2], face_coord[1] + face_coord[3]),
                     (0, 0, 255) if res[0] is None else (255, 0, 0),
                     6
                 )
