@@ -290,3 +290,4 @@ dmypy.json
 
 ./dataset
 test/predicted
+src/python/insight_face/work_space/save/model_cpu_final.pth
