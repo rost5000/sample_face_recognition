@@ -6,6 +6,8 @@ import torch
 from src.python.insight_face.model import l2_norm
 import cv2
 import os
+import shutil
+from datetime import datetime
 
 
 def prepare_facebank(conf, model, mtcnn, tta=True):
@@ -27,19 +29,30 @@ def prepare_facebank(conf, model, mtcnn, tta=True):
                 continue
             try:
                 img = Image.open(file)
-            except:
+                if img.mode == 'RGBA':
+                    img.load()  # required  for png.split()
+                    background = Image.new("RGB", img.size, (255, 255, 255))
+                    background.paste(img, mask=img.split()[3])  # 3 is the alpha channel
+                    img = background
+                if img.mode == 'SRGB':
+                    img = img.convert('RGB')
+                print(file)
+                if img.size != (112, 112):
+                    img = mtcnn.align(img)
+                    if img is None:
+                        print(f"\nRemove file {file}\n")
+                        with open(path_del_files, 'a') as f:
+                            f.write(f'{file},mtccn_err\n')
+                        # os.remove(file)
+                        shutil.move(str(file), f'data/removed/{file.name}')
+                        continue
+
+            except Exception:
                 print(f"\nRemove file {file}\n")
                 with open(path_del_files, 'a') as f:
                     f.write(f'{file},cant_open\n')
                     os.remove(file)
-            if img.size != (112, 112):
-                img = mtcnn.align(img)
-                if img == False:
-                    print(f"\nRemove file {file}\n")
-                    with open(path_del_files, 'a') as f:
-                        f.write(f'{file},mtccn_err\n')
-                    os.remove(file)
-                    continue
+
             with torch.no_grad():
                 if tta:
                     mirror = trans.functional.hflip(img)
@@ -49,10 +62,9 @@ def prepare_facebank(conf, model, mtcnn, tta=True):
                 else:
                     embs.append(model(conf.test_transform(img).to(conf.device).unsqueeze(0)))
         if len(embs) == 0:
-            print(f"\nRemove file {file}\n")
+            print(f"\nRemove cls {path.name}\n")
             with open(path_del_files, 'a') as f:
-                f.write(f'{file},no_embs\n')
-            os.remove(file)
+                f.write(f'{path.name},no_embs!!!\n')
             continue
         embedding = torch.cat(embs).mean(0, keepdim=True)
         embeddings.append(embedding)
@@ -81,7 +93,7 @@ def get_face(mtcnn, frame):
 def get_emb_from_frame(conf, model, mtcnn, frame, tta=True):
     img_temp = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     img = Image.fromarray(img_temp)
-    detected_img = mtcnn.align(img)
+    detected_img, _ = mtcnn.align(img)
     if detected_img:
         with torch.no_grad():
             if tta:
@@ -153,3 +165,6 @@ def hflip_batch(imgs_tensor):
     for i, img_ten in enumerate(imgs_tensor):
         hfliped_imgs[i] = hflip(img_ten)
     return hfliped_imgs
+
+def get_time():
+    return (str(datetime.now())[:-10]).replace(' ','-').replace(':','-')

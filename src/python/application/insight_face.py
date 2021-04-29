@@ -65,7 +65,7 @@ class Insight_Face:
         embs = []
         embeddings = []
         cap = cv2.VideoCapture(0)
-        while len(embs) == 0:
+        while len(embs) < 10:
             frame = li.load_from_camera(cap)
             emb = get_emb_from_frame(self.conf, self.learner.model, self.mtcnn, frame, tta=False)
             if emb is not None:
@@ -94,7 +94,7 @@ class Insight_Face:
 
             cv2.putText(
                 frame,
-                predictions[ind],
+                "ArcFace+ResNet50",
                 (x_l_face_mtcnn + 10, y_up_face_mtcnn - 10),
                 cv2.FONT_HERSHEY_SIMPLEX, 1, (34, 139, 34), 2
             )
