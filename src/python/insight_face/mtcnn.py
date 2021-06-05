@@ -17,11 +17,21 @@ def image_process_from_cv2(frame):
     return gray
 
 
-def show_facial_points(img, facial5points, radius=30):
+def show_facial_points(img, boxes, facial5points, radius=20):
     open_cv_image = np.array(img)
     show_img = open_cv_image[:, :, ::-1].copy()  # Convert RGB to BGR
-    for point in facial5points:
-        show_img = cv2.circle(show_img, (point[0], point[1]), radius, (0, 0, 255), 1)
+    # for point in facial5points:
+    #     show_img = cv2.circle(show_img, (point[0], point[1]), radius, (0, 0, 255), 3)
+    for box in boxes:
+        x_l_face_mtcnn, y_up_face_mtcnn, x_r_face_mtcnn, y_down_face_mtcnn = round(box[0]), round(
+            box[1]), round(box[2]), round(box[3])
+        cv2.rectangle(
+            show_img,
+            (x_l_face_mtcnn, y_up_face_mtcnn),
+            (x_r_face_mtcnn, y_down_face_mtcnn),
+            (34, 139, 34),
+            6
+        )
     show_img = cv2.cvtColor(show_img, cv2.COLOR_BGR2RGB)
     show_img = Image.fromarray(show_img)
     show_img.show()
@@ -40,20 +50,18 @@ class MTCNN:
 
     def align(self, img, landmarks=None):
         if landmarks is None:
-            _, landmarks = self.detect_faces(img)
+            box, landmarks = self.detect_faces(img)
 
         if len(landmarks):
             facial5points = [[landmarks[0][j], landmarks[0][j + 5]] for j in range(5)]
-            # show_facial_points(img, facial5points, 20)
-            #
-            # # reference_points = get_reference_facial_points((1280, 720), 0.7, (128, 72), default_square=False)
             # warped_face = warp_and_crop_face(np.array(img), facial5points, self.refrence, crop_size=(1280, 720))
-            # show_img = Image.fromarray(warped_face)
+            # show_facial_points(img, [box], facial5points, 10)
+            # show_img = Image.fromarray(np.array(img))
             # show_img.show()
             warped_face = warp_and_crop_face(np.array(img), facial5points, self.refrence, crop_size=(112, 112))
             # show_img = Image.fromarray(warped_face)
             # show_img.show()
-            return Image.fromarray(warped_face)
+            return Image.fromarray(warped_face), box
         else:
             return None
 
@@ -65,15 +73,19 @@ class MTCNN:
             boxes = boxes[:limit]
             landmarks = landmarks[:limit]
         faces = []
+        # if len(boxes):
+        #     show_facial_points(img, boxes, None, 10)
         for landmark in landmarks:
             facial5points = [[landmark[j], landmark[j + 5]] for j in range(5)]
             warped_face = warp_and_crop_face(np.array(img), facial5points, self.refrence, crop_size=(112, 112))
+            # show_img = Image.fromarray(warped_face)
+            # show_img.show()
             faces.append(Image.fromarray(warped_face))
         # return boxes, faces
         return faces
 
     def detect_faces(self, image, min_face_size=20.0,
-                     thresholds=[0.6, 0.7, 0.8],
+                     thresholds=[0.4, 0.7, 0.8],
                      nms_thresholds=[0.7, 0.7, 0.7]):
         """
         Arguments:

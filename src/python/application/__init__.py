@@ -8,6 +8,7 @@ import src.python.facenet as fs
 import src.python.facenet.utils as face_utils
 from src.python.insight_face.mtcnn import MTCNN
 from src.python.application.insight_face import Insight_Face
+from PIL import Image
 
 cap = cv2.VideoCapture(0)
 emb_train = []
@@ -16,7 +17,8 @@ is_use_insight_face = True
 is_use_windows_message_box = False
 
 if __name__ == "__main__":
-    while True:
+    count = 0
+    while count < 10:
         frame = li.load_from_camera(cap)
         cv2.imshow('frame', frame)
         faces_coord = face_utils.get_face_from_image(frame)
@@ -29,7 +31,7 @@ if __name__ == "__main__":
                 frame[y_face:y_face + h_face, x_face:x_face + w_face]
             ))
             y_train.append(1)
-            break
+            count += 1
 
     if is_use_insight_face:
         insight_face = Insight_Face()
@@ -85,13 +87,22 @@ if __name__ == "__main__":
                     frame[y_face:y_face + h_face, x_face:x_face + w_face]
                 )
                 res = fs.predict_embedded_euclidean_distance(np.array([emb_test]), np.array(emb_train), y_train)
+                cv2.putText(
+                    frame,
+                    "FaceNet",
+                    (x_face + 10, y_face - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (34, 139, 34), 2
+                )
                 cv2.rectangle(
                     frame,
                     (face_coord[0], face_coord[1]),
                     (face_coord[0] + face_coord[2], face_coord[1] + face_coord[3]),
-                    (0, 0, 255) if res[0] is None else (255, 0, 0),
+                    (34, 139, 34) if res[0] else (0, 69, 255),
                     6
                 )
+            # show_img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            # show_img = Image.fromarray(show_img)
+            # show_img.show()
             cv2.imshow('frame', frame)
 
     cap.release()
